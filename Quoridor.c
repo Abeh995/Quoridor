@@ -7,13 +7,20 @@
 #include <time.h>
 #include <string.h>
 
-#define wallsize 15 
-
-char A[100][100];
-char B[100][100];
-int playloc[2][4];
-int walloc[wallsize][wallsize]; // jahat zakhire charRah ha // ARRAY START FROM 1
-
+#define WallSize 15
+#define BoardSize 31
+char GameBoard[BoardSize][BoardSize];// THE MAIN BOARD GAME
+char BoardCopy[BoardSize][BoardSize];// SOME THING LIKE GameBoard COPY OF MAIN BOARD
+int PlayersPosition[4][2];// PLAYERS LOCATION IN MAIN BOARD
+int PlayersWallCounter[4];// PlayersWallCounter: PLAYER WALL COUNTER
+int WallsPosition[WallSize][WallSize]; // NUMBER OF WALLS IN THE SAME LOACTION // ARRAY START FROM 1
+char player1[21];
+char player2 [21];
+char player3[21];
+char player4[21];
+bool IsRobot[4];// AN ARRAY TO SAVE THE NUMBER OF ROBOTS IN GAME // TRUE: ROBOT & FALSE: REAL PLAYER
+int turn;
+int n;// NUMBER OF DEMINSIONS
 typedef enum {
   BLACK = 0,
   BLUE = 1,
@@ -60,7 +67,7 @@ void print(int m){
 	int i,j;
 	for(i=0;i<m;i++){
         for(j=0;j<m;j++){
-            printf(" %c",A[i][j]);
+            printf(" %c",GameBoard[i][j]);
         }
         printf("\n");
     }
@@ -71,28 +78,28 @@ void print2(int m){
 	int i,j;
 	for(i=0;i<m;i++){
         for(j=0;j<m;j++){
-            printf(" %d",A[i][j]);
+            printf(" %d",GameBoard[i][j]);
         }
         printf("\n");
     }
 }
 
-void winner(int *sw,int n,char player1,char player2,char player3,char player4,int r1,int c2,int r3,int c4){
+void winner(int *sw,int n){
 
-	if(r1==2*n-1||c2==1||r3==1||c4==2*n-1){//2*n-1 baraye zoj va fard
+	if(PlayersPosition[0][0]==2*n-1||PlayersPosition[1][1]==1||PlayersPosition[2][0]==1||PlayersPosition[3][1]==2*n-1){//2*n-1 baraye zoj va fard
 		*sw=0;
 		clear();
 		printf("END OF THE LINE\n");
 		sleep(5000);
 		printf("HERE WE ARE...\n");
 		sleep(3500);
-		if(r1==2*n-1){
+		if(PlayersPosition[0][0]==2*n-1){
 		printf("  **\n ****\n******\n %s WON THE MATCH\n",player1);
 		}
-		else if(c2==1){
+		else if(PlayersPosition[1][1]==1){
 		printf("  **\n ****\n******\n %s WON THE MATCH\n",player2);
 		}
-		else if(r3==1){
+		else if(PlayersPosition[2][0]==1){
 		printf("  **\n ****\n******\n %s WON THE MATCH\n",player3);
 		}
 		else{
@@ -101,52 +108,52 @@ void winner(int *sw,int n,char player1,char player2,char player3,char player4,in
 	}
 }
 
-void canwall(char B[][100], int n, int r,int c ){// FOR PLAYER 1
+void CanPlaceWall(char BoardCopy[][BoardSize], int r,int c ){// FOR one player
 	
-	if(B[r][c]=='4'){
+	if(BoardCopy[r][c]=='4'){
 		return;
 	}
 	
-	if(B[r][c]=='0' ){// check TOP
-		B[r][c]='1';
-		if(B[r-1][c]!='*'){
-			canwall(B,n,r-2,c);
+	if(BoardCopy[r][c]=='0' ){// check TOP
+		BoardCopy[r][c]='1';
+		if(BoardCopy[r-1][c]!='*'){
+			CanPlaceWall(BoardCopy,r-2,c);
 		}
 	}
-	else if( B[r][c]=='1'){ // check down
-		B[r][c]='2';
-		if(B[r+1][c]!='*'){
-			canwall(B,n,r+2,c);
+	else if( BoardCopy[r][c]=='1'){ // check down
+		BoardCopy[r][c]='2';
+		if(BoardCopy[r+1][c]!='*'){
+			CanPlaceWall(BoardCopy,r+2,c);
 		}
 	}
-	else if( B[r][c]=='2'){ // check RIGHT 
-		B[r][c]='3';
-		if( B[r][c+1]!='*'){
-			canwall(B,n,r,c+2);
+	else if( BoardCopy[r][c]=='2'){ // check RIGHT 
+		BoardCopy[r][c]='3';
+		if( BoardCopy[r][c+1]!='*'){
+			CanPlaceWall(BoardCopy,r,c+2);
 		}
 	}
-	else if( B[r][c]=='3'){
-		B[r][c]='4';
-		if(B[r][c-1]!= '*'){
-			canwall(B,n,r,c-2);
+	else if( BoardCopy[r][c]=='3'){
+		BoardCopy[r][c]='4';
+		if(BoardCopy[r][c-1]!= '*'){
+			CanPlaceWall(BoardCopy,r,c-2);
 		}
 	}
 	
-	canwall(B,n,r,c);
+	CanPlaceWall(BoardCopy,r,c);
 	
 }
 
-int CAN(char A[][100],char B[][100],int n,int r1,int c1,int r2,int c2,int r3,int c3,int r4,int c4){
+int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 	
 	int i,j;
 	int m =2*n+1;
 	int counter=0;
 	bool can=false;
 	
-	copy(A,B,m);
-	canwall(B,n,r1,c1);// FOR PLAYER 1
+	copy(GameBoard,BoardCopy,m);
+	CanPlaceWall(BoardCopy,PlayersPosition[0][0],PlayersPosition[0][1]);// FOR PLAYER 1
 	for(j=1;j<m;j+=2){
-		if(B[2*n-1][j]=='4'){
+		if(BoardCopy[2*n-1][j]=='4'){
 			can =true;
 		}
 	}
@@ -155,10 +162,11 @@ int CAN(char A[][100],char B[][100],int n,int r1,int c1,int r2,int c2,int r3,int
 		can=false;
 	}
 	
-	copy(A,B,m);// FOR PLAYER 2
-	canwall(B,n,r2,c2);
+	
+	copy(GameBoard,BoardCopy,m);// FOR PLAYER 2
+	CanPlaceWall(BoardCopy,PlayersPosition[1][0],PlayersPosition[1][1]);
 	for(i=1;i<m;i+=2){
-		if(B[i][1]=='4'){
+		if(BoardCopy[i][1]=='4'){
 			can=true;
 		}
 	}
@@ -167,10 +175,10 @@ int CAN(char A[][100],char B[][100],int n,int r1,int c1,int r2,int c2,int r3,int
 		can=false;
 	}
 	
-	copy(A,B,m);// FOR PLAYER 3
-	canwall(B,n,r3,c3);
+	copy(GameBoard,BoardCopy,m);// FOR PLAYER 3
+	CanPlaceWall(BoardCopy,PlayersPosition[2][0],PlayersPosition[2][1]);
 	for(j=1;j<m;j+=2){
-		if(B[1][j]=='4'){
+		if(BoardCopy[1][j]=='4'){
 			can=true;
 		}
 	}
@@ -179,10 +187,10 @@ int CAN(char A[][100],char B[][100],int n,int r1,int c1,int r2,int c2,int r3,int
 		can= false;
 	}
 	
-	copy(A,B,m);// FOR PLAYER 4
-	canwall(B,n,r4,c4);
+	copy(GameBoard,BoardCopy,m);// FOR PLAYER 4
+	CanPlaceWall(BoardCopy,PlayersPosition[3][0],PlayersPosition[3][1]);
 	for(i=1;i<m;i+=2){
-		if(B[i][2*n-1]=='4'){
+		if(BoardCopy[i][2*n-1]=='4'){
 			can=true;
 		}
 	}
@@ -199,7 +207,7 @@ int CAN(char A[][100],char B[][100],int n,int r1,int c1,int r2,int c2,int r3,int
 	}
 }
 
-int Wall(char A[][100],char B[][100],int n,int wi,int wj, int hv,int r1,int c1,int r2,int c2,int r3,int c3,int r4,int c4){ //PLACE WALLS   . wi: WALL I & ... .hv: H OR V
+int Wall(char GameBoard[][BoardSize],char BoardCopy[][BoardSize],int n,int wi,int wj, int hv){ //PLACE WALLS   . wi: WALL I & ... .hv: H OR V
 	int i,j;
 	int m=2*n+1;
 	bool can = false ;
@@ -212,8 +220,8 @@ int Wall(char A[][100],char B[][100],int n,int wi,int wj, int hv,int r1,int c1,i
 	if(hv!=1 && hv!=2){
 		return 1;//OUT OF RULE
 	}
-	if(walloc[wi][wj]==0){
-		walloc[wi][wj]=1;
+	if(WallsPosition[wi][wj]==0){
+		WallsPosition[wi][wj]=1;
 	}
 	else{// chahar raah por ast lotfan badan tamas begirid
 		return 1; //OUT OF RULE
@@ -221,88 +229,88 @@ int Wall(char A[][100],char B[][100],int n,int wi,int wj, int hv,int r1,int c1,i
 	wi*=2;
 	wj*=2;
 	if(hv==1){// 1 mean: OFOGHI
-		if(A[wi][wj-1]==42 ||A[wi][wj+1]==42){// CHAHAR RAH POR  AST LOTFAN BADAN TAMAS BEGIRID
-			walloc[wi/2][wj/2]=0;
+		if(GameBoard[wi][wj-1]==42 ||GameBoard[wi][wj+1]==42){// CHAHAR RAH POR  AST LOTFAN BADAN TAMAS BEGIRID
+			WallsPosition[wi/2][wj/2]=0;
 			return 1; //OUT OF RULE
 		}
 		else{// build walls
-			A[wi][wj-1]=42;
-			A[wi][wj+1]=42;
+			GameBoard[wi][wj-1]=42;
+			GameBoard[wi][wj+1]=42;
 			//return 0; //SUCCESS.
-			if(CAN(A,B,n,r1,c1,r2,c2,r3,c3,r4,c4)==0){
+			if(CAN(GameBoard,BoardCopy)==0){
 				return 0;//SUCCESS
 			}
 			else{
-				A[wi][wj-1]='-';
-				A[wi][wj+1]='-';
-				walloc[wi/2][wj/2]=0;
+				GameBoard[wi][wj-1]='-';
+				GameBoard[wi][wj+1]='-';
+				WallsPosition[wi/2][wj/2]=0;
 				return 1; // OUT OF RULE
 			}
 		}
 	}
 	else{// hv=2 AMOODI
-		if(A[wi-1][wj]=='*' ||A[wi+1][wj]=='*' ){// CHAHAR RAH POR  AST LOTFAN BADAN TAMAS BEGIRID
-			walloc[wi/2][wj/2]=0;
+		if(GameBoard[wi-1][wj]=='*' ||GameBoard[wi+1][wj]=='*' ){// CHAHAR RAH POR  AST LOTFAN BADAN TAMAS BEGIRID
+			WallsPosition[wi/2][wj/2]=0;
 			return 1;//OUT OF RULE
 		}
 		else{//build walls
-			A[wi-1][wj]=42;
-			A[wi+1][wj]=42;
+			GameBoard[wi-1][wj]=42;
+			GameBoard[wi+1][wj]=42;
 			//return 0; //SUCCESS
-			if(CAN(A,B,n,r1,c1,r2,c2,r3,c3,r4,c4)==0){
+			if(CAN(GameBoard,BoardCopy)==0){
 				return 0;//SUCCESS
 			}
 			else{
-				A[wi-1][wj]='|';
-				A[wi+1][wj]='|';
-				walloc[wi/2][wj/2]=0;
+				GameBoard[wi-1][wj]='|';
+				GameBoard[wi+1][wj]='|';
+				WallsPosition[wi/2][wj/2]=0;
 				return 1; //OUT OF RULE
 			}
 		}
 	}
 }
 
-int Move(char A[][100],int n,int nmove,int *I,int *J ){//li= last *I mean last location of player piece and n= number of Dimensions
+int Move(char GameBoard[][BoardSize],int n,int nmove,int *I,int *J ){//li= last *I mean last location of player piece and n= number of Dimensions
 	// Nmove : Where to move( number of move)
 	int i,j;
 	if(nmove==8|| nmove==2){
 		if(nmove ==8){ // nmove =8 (up)
-			if(A[*I-1][*J]== 205 || A[*I-1][*J]== 42){
+			if(GameBoard[*I-1][*J]== 205 || GameBoard[*I-1][*J]== 42){
 				return 1; // OUT OF RULE
 			}
 			else{ // check the NEW LOCATION TO BE EMPTY
-				if(A[*I-2][*J] =='0'){
-					A[*I-2][*J] = A[*I][*J];
-					A[*I][*J] = '0';
+				if(GameBoard[*I-2][*J] =='0'){
+					GameBoard[*I-2][*J] = GameBoard[*I][*J];
+					GameBoard[*I][*J] = '0';
 					*I-=2;
 				}
 				else{
-					if(A[*I-3][*J]==42||A[*I-3][*J]== 205){
+					if(GameBoard[*I-3][*J]==42||GameBoard[*I-3][*J]== 205){
 						return 1; //out of rule
 					}
 					else{
-						if(A[*I-4][*J]=='0'){
-						A[*I-4][*J]=A[*I][*J];
-						A[*I][*J]='0';
+						if(GameBoard[*I-4][*J]=='0'){
+						GameBoard[*I-4][*J]=GameBoard[*I][*J];
+						GameBoard[*I][*J]='0';
 						*I-=4;
 						}
 						else{
-							if(A[*I-5][*J]=='*'){
+							if(GameBoard[*I-5][*J]=='*'){
 								return 1;//OUT OF RULE 
 							}
 							else{
-								if(A[*I-6][*J]=='0'){
-									A[*I-6][*J]=A[*I][*J];
-									A[*I][*J]='0';
+								if(GameBoard[*I-6][*J]=='0'){
+									GameBoard[*I-6][*J]=GameBoard[*I][*J];
+									GameBoard[*I][*J]='0';
 									*I-=6;
 								}
 								else{
-									if(A[*I-7][*J]=='*'){
+									if(GameBoard[*I-7][*J]=='*'){
 										return 1;//OUT OF RULE
 									}
 									else{
-										A[*I-8][*J]=A[*I][*J];
-										A[*I][*J]='0';
+										GameBoard[*I-8][*J]=GameBoard[*I][*J];
+										GameBoard[*I][*J]='0';
 										*I-=8;
 									}
 								}
@@ -314,44 +322,44 @@ int Move(char A[][100],int n,int nmove,int *I,int *J ){//li= last *I mean last l
 			}
 		}
 		else{// nmove = 2 (down)
-			if(A[*I+1][*J]== 205 || A[*I+1][*J] == 42){
+			if(GameBoard[*I+1][*J]== 205 || GameBoard[*I+1][*J] == 42){
 				return 1;//OUT OF RULE
 			}
 			else{// check the NEW LOCATION TO BE EMPTY
-				if(A[*I+2][*J] == '0'){
-					A[*I+2][*J]= A[*I][*J];
-					A[*I][*J] = '0';
+				if(GameBoard[*I+2][*J] == '0'){
+					GameBoard[*I+2][*J]= GameBoard[*I][*J];
+					GameBoard[*I][*J] = '0';
 					*I+=2;
 				}
 				else{
 					i=*I+2;
 					j=*J;
-					if(A[*I+3][*J]==42||A[*I+3][*J]== 205){
+					if(GameBoard[*I+3][*J]==42||GameBoard[*I+3][*J]== 205){
 						return 1; //out of rule
 					}
 					else{
-						if(A[*I+4][*J]=='0'){
-						A[*I+4][*J]=A[*I][*J];
-						A[*I][*J]='0';
+						if(GameBoard[*I+4][*J]=='0'){
+						GameBoard[*I+4][*J]=GameBoard[*I][*J];
+						GameBoard[*I][*J]='0';
 						*I+=4;
 						}
 						else{
-							if(A[*I+5][*J]=='*'){
+							if(GameBoard[*I+5][*J]=='*'){
 								return 1;//OUT OF RULE 
 							}
 							else{
-								if(A[*I+6][*J]=='0'){
-									A[*I+6][*J]=A[*I][*J];
-									A[*I][*J]='0';
+								if(GameBoard[*I+6][*J]=='0'){
+									GameBoard[*I+6][*J]=GameBoard[*I][*J];
+									GameBoard[*I][*J]='0';
 									*I+=6;
 								}
 								else{
-									if(A[*I+7][*J]=='*'){
+									if(GameBoard[*I+7][*J]=='*'){
 										return 1;//OUT OF RULE
 									}
 									else{
-										A[*I+8][*J]=A[*I][*J];
-										A[*I][*J]='0';
+										GameBoard[*I+8][*J]=GameBoard[*I][*J];
+										GameBoard[*I][*J]='0';
 										*I+=8;
 									}
 								}
@@ -366,44 +374,44 @@ int Move(char A[][100],int n,int nmove,int *I,int *J ){//li= last *I mean last l
 	}
 	else{
 		if(nmove== 4){ // nmove = 4 (left)
-			if(A[*I][*J-1]== 186 || A[*I][*J-1] == 42){
+			if(GameBoard[*I][*J-1]== 186 || GameBoard[*I][*J-1] == 42){
 				return 1;//OUT OF RULE
 			}
 			else{ //check the NEW LOCATON TO BE EMPTY
-				if(A[*I][*J-2] == '0'){
-					A[*I][*J-2] = A[*I][*J];
-					A[*I][*J] = '0';
+				if(GameBoard[*I][*J-2] == '0'){
+					GameBoard[*I][*J-2] = GameBoard[*I][*J];
+					GameBoard[*I][*J] = '0';
 					*J-=2;
 				}
 				else{
 					i=*I;
 					j=*J-2;
-					if(A[*I][*J-3]== 42 || A[*I][*J-3]== 186 ){
+					if(GameBoard[*I][*J-3]== 42 || GameBoard[*I][*J-3]== 186 ){
 						return 1;//out of rule
 					}
 					else{
-						if(A[*I][*J-4]=='0'){
-						A[*I][*J-4]=A[*I][*J];
-						A[*I][*J]='0';
+						if(GameBoard[*I][*J-4]=='0'){
+						GameBoard[*I][*J-4]=GameBoard[*I][*J];
+						GameBoard[*I][*J]='0';
 						*J-=4;
 						}
 						else{
-							if(A[*I][*J-5]=='*'){
+							if(GameBoard[*I][*J-5]=='*'){
 								return 1;//OUT OF RULE 
 							}
 							else{
-								if(A[*I][*J-6]=='0'){
-									A[*I][*J-6]=A[*I][*J];
-									A[*I][*J]='0';
+								if(GameBoard[*I][*J-6]=='0'){
+									GameBoard[*I][*J-6]=GameBoard[*I][*J];
+									GameBoard[*I][*J]='0';
 									*J-=6;
 								}
 								else{
-									if(A[*I][*J-7]=='*'){
+									if(GameBoard[*I][*J-7]=='*'){
 										return 1;//OUT OF RULE
 									}
 									else{
-										A[*I][*J-8]=A[*I][*J];
-										A[*I][*J]='0';
+										GameBoard[*I][*J-8]=GameBoard[*I][*J];
+										GameBoard[*I][*J]='0';
 										*J-=8;
 									}
 								}
@@ -415,44 +423,44 @@ int Move(char A[][100],int n,int nmove,int *I,int *J ){//li= last *I mean last l
 			}
 		}
 		else{// nmove = 6 (right)
-			if(A[*I][*J+1] == 186 || A[*I][*J+1] == 42){
+			if(GameBoard[*I][*J+1] == 186 || GameBoard[*I][*J+1] == 42){
 				return 1; // OUT OF RULE
 			}
 			else{ // CHECK THE NEW LOACTION TO BE EMPTY
-				if( A[*I][*J+2] == '0'){
-					A[*I][*J+2] = A[*I][*J];
-					A[*I][*J] = '0';
+				if( GameBoard[*I][*J+2] == '0'){
+					GameBoard[*I][*J+2] = GameBoard[*I][*J];
+					GameBoard[*I][*J] = '0';
 					*J+=2;
 				}
 				else{
 					i=*I;
 					j=*J+2;
-					if(A[*I][*J+3]== 42 || A[*I][*J+3]== 186 ){
+					if(GameBoard[*I][*J+3]== 42 || GameBoard[*I][*J+3]== 186 ){
 						return 1;//out of rule
 					}
 					else{
-						if(A[*I][*J+4]=='0'){
-						A[*I][*J+4]=A[*I][*J];
-						A[*I][*J]='0';
+						if(GameBoard[*I][*J+4]=='0'){
+						GameBoard[*I][*J+4]=GameBoard[*I][*J];
+						GameBoard[*I][*J]='0';
 						*J+=4;
 						}
 						else{
-							if(A[*I][*J+5]=='*'){
+							if(GameBoard[*I][*J+5]=='*'){
 								return 1;//OUT OF RULE 
 							}
 							else{
-								if(A[*I][*J+6]=='0'){
-									A[*I][*J+6]=A[*I][*J];
-									A[*I][*J]='0';
+								if(GameBoard[*I][*J+6]=='0'){
+									GameBoard[*I][*J+6]=GameBoard[*I][*J];
+									GameBoard[*I][*J]='0';
 									*J+=6;
 								}
 								else{
-									if(A[*I][*J+7]=='*'){
+									if(GameBoard[*I][*J+7]=='*'){
 										return 1;//OUT OF RULE
 									}
 									else{
-										A[*I][*J+8]=A[*I][*J];
-										A[*I][*J]='0';
+										GameBoard[*I][*J+8]=GameBoard[*I][*J];
+										GameBoard[*I][*J]='0';
 										*J+=8;
 									}
 								}
@@ -467,7 +475,7 @@ int Move(char A[][100],int n,int nmove,int *I,int *J ){//li= last *I mean last l
 	}
 }
 
-void createboard(char A[][100],int m){
+void createboard(char GameBoard[][BoardSize],int m){
 	int i,j;
     int rows=m;
     int cols=m;
@@ -475,46 +483,46 @@ void createboard(char A[][100],int m){
     for ( i = 0; i < rows; i++) {
         for ( j = 0; j < cols; j++) {
             if (i == 0 || i == rows - 1 || j == 0 || j == cols - 1) {
-            	A[i][j]=42;
+            	GameBoard[i][j]=42;
             }
             else{
-            	A[i][j]='0';
+            	GameBoard[i][j]='0';
 			}
         }
     }
     for(i=1;i<m;){
     	for(j=2;j<m-1;){
-    		A[i][j]='|';//amoodi
+    		GameBoard[i][j]='|';//amoodi
     		j+=2;
 		}
     	i+=2;
 	}
 	for(j=1;j<m;){
     	for(i=2;i<m-1;){//ofoghi
-    		A[i][j]='-';
+    		GameBoard[i][j]='-';
     		i+=2;
 		}
     	j+=2;
 	}
 	for(i=2;i<m-1;){
 		for(j=2;j<m-1;){
-			A[i][j]= '+';
+			GameBoard[i][j]= '+';
 			j+=2;
 		}
 		i+=2;
 	}
 }
 
-void copy(char A[][100],char B[][100], int m){
+void copy(char GameBoard[][BoardSize],char BoardCopy[][BoardSize], int m){
 	int i,j    ;
 	for (i=0;i<m;i++){
 		for(j=0;j<m;j++){
-			B[i][j]=A[i][j];
+			BoardCopy[i][j]=GameBoard[i][j];
 		}
 	}
 	for(i=1;i<m;i+=2){
 		for(j=1;j<m;j+=2){
-			B[i][j]='0';
+			BoardCopy[i][j]='0';
 		}
 	}
 }
@@ -522,9 +530,257 @@ void copy(char A[][100],char B[][100], int m){
 void printb(int m){
 	for(int i=0;i<m;i++){
 		for(int j=0;j<m;j++){
-			printf(" %c",B[i][j]);
+			printf(" %c",BoardCopy[i][j]);
 		}
 		printf("\n");
+	}
+}
+
+int SaveGame(){
+	int i,j;
+	FILE *save;
+	save= fopen("SAVE.dat","w+b");
+	if(!save){
+		perror("Can't Create File!\a\n");
+		return 1;
+	}
+	int turn_n[2];// turn_n array is just for saving variebles in same array
+	turn_n[0]=turn;
+	turn_n[1]=n;
+	
+	size_t written=fwrite(PlayersWallCounter,sizeof(int),4,save);// PlayersWallCounter: PLAYERS WALL COUNTER
+	if(written !=4){
+		printf("eror writing PlayersWallCounter");
+		return 1;
+	}
+	
+	written=fwrite(turn_n,sizeof(int),2,save);
+	if(written !=2){
+		printf("eror writing PlayersWallCounter");
+		return 1;
+	}
+	
+	for(i=0;i<4;i++){//4 is rows of PlayersPosition
+		written=fwrite(PlayersPosition[i],sizeof(int),2,save);
+		if(written!=2){
+			printf("eror writing PlayersPosition");
+			return 1;
+		}
+	}
+	
+	written =fwrite(IsRobot,sizeof(bool),4,save);
+	if(written!=4){
+		printf("eror writing Playbot");
+		return 1;
+	}
+	
+	for(i=0;i<WallSize;i++){
+		written=fwrite(WallsPosition[i],sizeof(int),WallSize,save);
+		if(written!=WallSize){
+			printf("eror writing WallsPosition");
+			return 1;
+		}
+	}
+	
+	for(i=0;i<BoardSize;i++){
+		written=fwrite(GameBoard[i],sizeof(char),BoardSize,save);
+		if(written!=BoardSize){
+			printf("eror writing GameBoard[][]");
+			return 1;
+		}
+	}
+	
+	fputs(player1,save);
+	fputc('\n',save);
+	fputs(player2,save);
+	fputc('\n',save);
+	fputs(player3,save);
+	fputc('\n',save);
+	fputs(player4,save);
+	fputc('\n',save);
+	
+	if(fclose(save)==EOF){
+		perror("Can't Close File!\a\n");
+		return 1;
+	}
+	return 0;
+}
+
+int LoadGame(){
+	int i,j,len;
+	FILE *load;
+	load= fopen("SAVE.dat","r+b");
+	if(!load){
+		perror("Cant't open File!\a\n");
+		return 1;
+	}
+	int turn_n[2];
+	
+	size_t readed=fread(PlayersWallCounter,sizeof(int),4,load);
+	if(readed!=4){
+		printf("eror reading PlayersWallCounter");
+		return 1;
+	}
+	
+	readed=fread(turn_n,sizeof(int),2,load);
+	if(readed!=2){
+		printf("eror reading tunr_n");
+		return 1;
+	}
+
+	for(i=0;i<4;i++){// 4 is rows of PlayersPosition
+		readed=fread(PlayersPosition[i],sizeof(int),2,load);
+		if(readed!=2){
+			printf("eror reading PlayersPosition");
+			return 1;
+		}
+	}
+	
+	readed=fread(IsRobot,sizeof(bool),4,load);
+	if(readed!=4){
+		printf("eror reading Playbot");
+		return 1;
+	}
+	
+	for(i=0;i<WallSize;i++){
+		readed=fread(WallsPosition[i],sizeof(int),WallSize,load);
+		if(readed!=WallSize){
+			printf("eror reading WallsPosition");
+			return 1;
+		}
+	}
+	
+	for(i=0;i<BoardSize;i++){
+		readed=fread(GameBoard[i],sizeof(char),BoardSize,load);
+		if(readed!=BoardSize){
+			printf("eror reading GameBoard[][]");
+			return 1;
+		}
+	}
+	
+	fgets(player1,21,load);
+	len=strlen(player1);
+	player1[len-1]='\0';
+	fgets(player2,21,load);
+	len=strlen(player2);
+	player2[len-1]='\0';
+	fgets(player3,21,load);
+	len=strlen(player3);
+	player3[len-1]='\0';
+	fgets(player4,21,load);
+	len=strlen(player4);
+	player4[len-1]='\0';
+	
+	turn= turn_n[0];
+	n=turn_n[1];
+	
+	if(fclose(load)==EOF){
+		perror("Cant't Close File!\a\n");
+		return 1;
+	}
+	return 0;
+}
+
+int StartNewGame(int *wall){
+	int m,Wall,i;
+	if(IsRobot[0]==false){ //REAL PLAYER
+		printf("Player 1 name: ");
+		scanf("%s",player1);
+	}
+	else{
+		strcpy(player1,"Alex");
+	}
+	
+	if(IsRobot[1]==false){ //REAL PLAYER
+		printf("Player 2 name: ");
+		scanf("%s",player2);
+	}	
+	else{
+		strcpy(player2,"Charlotte");
+	}
+		
+	if(IsRobot[2]==false){ //REAL PLAYER
+		printf("Player 3 name: ");
+		scanf("%s",player3);
+	}
+	else{
+		strcpy(player3,"Jia");
+	}
+	
+	if(IsRobot[3]==false){ //REAL PLAYER
+		printf("Player 4 name: ");
+		scanf("%s",player4);
+	}
+	else{
+		strcpy(player4,"Gabriel");
+	}
+	
+	while(1){
+		printf("Please enter number of Dimensions:\n");
+		scanf("%d",&n);
+		if(n>=3 && n<=25) break;
+	}
+	m=2*n+1;
+	createboard(GameBoard,m);
+	clear();
+	print(m);
+	
+	// FIRST PLAYER	S POSITION	
+	//zoj ya fard	
+	if(n%2!=0){// fard
+		GameBoard[1][n]='1';
+		GameBoard[n][m-2]='2';
+		GameBoard[m-2][n]='3';
+		GameBoard[n][1]='4';
+		PlayersPosition[0][0]=1;//row of player 1
+		PlayersPosition[0][1]=n;//colms of player 1
+		PlayersPosition[1][0]=n;//row of player 2
+		PlayersPosition[1][1]=2*n-1;//PlayersPosition[1][1]
+		PlayersPosition[2][0]=2*n-1;//row of player 3
+		PlayersPosition[2][1]=n;//PlayersPosition[2][1]
+		PlayersPosition[3][0]=n;//Rows player4
+		PlayersPosition[3][1]=1;//PlayersPosition[3][1]
+	}
+	else{
+		GameBoard[1][n-1]='1';
+		GameBoard[n-1][m-2]='2';
+		GameBoard[m-2][n-1]='3';
+		GameBoard[n-1][1]='4';
+		PlayersPosition[0][0]=1;//PlayersPosition[0][0]
+		PlayersPosition[0][1]=n-1;//PlayersPosition[0][1]
+		PlayersPosition[1][0]=n-1;//PlayersPosition[1][0]
+		PlayersPosition[1][1]=2*n-1;//PlayersPosition[1][1]
+		PlayersPosition[2][0]=2*n-1;//PlayersPosition[2][0]
+		PlayersPosition[2][1]=n-1;//PlayersPosition[2][1]
+		PlayersPosition[3][0]=n-1;//PlayersPosition[3][0]
+		PlayersPosition[3][1]=1;//PlayersPosition[3][1]
+	}
+	for(i=0;i<WallSize;i++){// baraye por kardan satr va sotoone 0 om.
+		WallsPosition[i][0]=1;
+		WallsPosition[0][i]=1;
+	}
+	// i=0;
+	while(1){
+		printf("Please enter Number of Walls:");
+		scanf("%d",&Wall);
+		if(Wall>=1&&Wall<=20) break;
+		else{
+			printf("WRONG ANSWER!\n Enter again:\a ");
+		}
+	}
+	*wall=Wall;
+	PlayersWallCounter[0]=PlayersWallCounter[1]=PlayersWallCounter[2]=PlayersWallCounter[3]=Wall;// PLAYERS WALL COUNTER
+	return 0;
+}
+
+/*int MainMenu(char){
+	
+}*/
+
+void Loading(){
+	int i,j;
+	for(i=0;i<10;i++){
+		printf("LOADING...[]");
 	}
 }
 
@@ -535,38 +791,31 @@ int main()
 	//printf("%d",rand());
 	//printf("\n%d",rand());
 
-	char player1[21];
-	char player2 [21];
-	char player3[21];
-	char player4[21];
-	
-    int n,m,i,j,rows,cols;
-    int k  ,r1,c1,r2,c2,r3,c3,r4,c4  ;// r1: PLayer 1 row & .... 
+    int m,i,j,rows,cols;
     int wall, wmove, plan, random,random2, random3;
     int swWIN=1,swWall=1,sw=1, sw1,sw2, swRobot=0,swSucs;
-	int turn=1;
 	int r,c;
 	int NewGame, BotGame;
 	int wi,wj,hv; // wall location & ofoghi ya amoodi
-	int p1wc,p2wc,p3wc,p4wc;// players wall counter: number of available wall of each player
-	bool P1_is_bot,P2_is_bot,P3_is_bot,P4_is_bot;
-	P1_is_bot=P2_is_bot=P3_is_bot=P4_is_bot=false;
+	bool CanSave=false;
+	IsRobot[0]=IsRobot[1]=IsRobot[2]=IsRobot[3]=false;
+	turn=1;
 	// LOADING ...
 
 	clear();
 	printf("\n   MAIN MENU\n\n\n   *New Game: 1\n\n   *Load Game: 2\n    : ");
 	scanf("%d",&NewGame);
 	while(1){
-		if(NewGame==1) {
+		if(NewGame==1) {// NEW GAME
 			clear();
 			
 			printf("\n   *Play With ROBOTS: 1\n\n   *PLAY UR OWN: 2\n    : ");
 			scanf("%d",&BotGame);
 			while(1){
 				if(BotGame==1){// YES, PLAY WITH ROBOTS
-					P2_is_bot=true;
-					P3_is_bot=true;
-					P4_is_bot=true;
+					IsRobot[1]=true;
+					IsRobot[2]=true;
+					IsRobot[3]=true;
 					clear();
 					break;
 				}
@@ -577,193 +826,200 @@ int main()
 				}
 				printf("WORNG\aENTER 1 FOR PLAY WITH BOTS or ENTER 2 FOR PLAY YOUR OWN\nPLEASE ENTER AGAIN:\n");
 				scanf("%d",&BotGame);
-			}
-			sw=1;
-			
+			}			
 			break;
 		}
 		else if(NewGame==2){// LOAD GAME
-			sw=0;
 			clear();
+			if(LoadGame()==0){
+				m=2*n+1;
+				printf("Loaded Successfully!\n");
+				sleep(3000);
+				clear();
+			}
+			else{
+				printf("File Did'n open Successfully!\a\n");
+			}
 			
 			break;
 		}
-		printf("Worng!\a \nEnter 1 for New Game or 2 for Load Game: ");
+		printf("Worng!\a \nEnter 1 for New Game or 2 for Load Game:\n");
 		scanf("%d",&NewGame);
 	}
-	// 4 ta string and 4 ta int (wall) AND int(n*n) AND 8 ta int( loaction r1 c1)
-	//  (n-1 * n-1)AND (HV) ta  int (wall location)  AND  TURNNNNNN
-	
-	if(P1_is_bot==false){ //REAL PLAYER
-		printf("Player 1 name: ");
-		scanf("%s",player1);
-	}
-	else{
-		player1[5]="Alex";
-	}
-	
-	if(P2_is_bot==false){ //REAL PLAYER
-		printf("Player 2 name: ");
-		scanf("%s",player2);
-	}
-	else{
-		strcpy(player2,"Charlotte");
-	}
-	
-	if(P3_is_bot==false){ //REAL PLAYER
-		printf("Player 3 name: ");
-		scanf("%s",player3);
-	}
-	else{
-		strcpy(player3,"Jia");
-	}
-	
-	if(P4_is_bot==false){ //REAL PLAYER
-		printf("Player 4 name: ");
-		scanf("%s",player4);
-	}
-	else{
-		strcpy(player4,"Gabriel");
-	}
-	
-	while(1){
-    	printf("Please enter number of Dimensions:\n");
-    	scanf("%d",&n);
-    	if(n>=3 && n<=25) break;
-	}
-    m=2*n+1;
-    k=2*n;
-    //char A[100][100];//2*n +1
-    createboard(A,m);
-    
 
-	print(m);
-	
-	// FIRST PLAYERS POSITION	
-	//zoj ya fard
-	if(n%2!=0){// fard
-		A[1][n]='1';
-		A[n][m-2]='2';
-		A[m-2][n]='3';
-		A[n][1]='4';
-		r1=1;
-    	c1=n;
-    	r2=n;
-    	c2=2*n-1;
-    	r3=2*n-1;
-    	c3=n;
-    	r4=n;
-    	c4=1;
-	}
-	else{
-		A[1][n-1]='1';
-		A[n-1][m-2]='2';
-		A[m-2][n-1]='3';
-		A[n-1][1]='4';
-		r1=1;
-		c1=n-1;
-		r2=n-1;
-		c2=2*n-1;
-		r3=2*n-1;
-		c3=n-1;
-		r4=n-1;
-		c4=1;
-	}
-	// 
-	for(i=0;i<wallsize;i++){
-		walloc[i][0]=1;
-	}
-	for(j=0;j<wallsize;j++){
-		walloc[0][j]=1;
-	}
-	// i=0;j=0;
-	while(1){
-		printf("Please enter Number of Walls:");
-		scanf("%d",&wall);
-		if(wall>=1&&wall<=20) break;
-		else{
-			printf("WRONG ANSWER\n Enter again\a");
+	if(NewGame==1){
+		if(IsRobot[0]==false){ //REAL PLAYER
+			printf("Player 1 name: ");
+			scanf("%s",player1);
 		}
+		else{
+			strcpy(player1,"Alex");
+		}
+		
+		if(IsRobot[1]==false){ //REAL PLAYER
+			printf("Player 2 name: ");
+			scanf("%s",player2);
+		}	
+		else{
+			strcpy(player2,"Charlotte");
+		}
+			
+		if(IsRobot[2]==false){ //REAL PLAYER
+			printf("Player 3 name: ");
+			scanf("%s",player3);
+		}
+		else{
+			strcpy(player3,"Jia");
+			}
+		
+		if(IsRobot[3]==false){ //REAL PLAYER
+			printf("Player 4 name: ");
+			scanf("%s",player4);
+		}
+		else{
+			strcpy(player4,"Gabriel");
+		}
+		
+		while(1){
+			printf("Please enter number of Dimensions:\n");
+			scanf("%d",&n);
+			if(n>=3 && n<=25) break;
+		}
+		m=2*n+1;
+		createboard(GameBoard,m);
+		clear();
+		print(m);
+		
+		// FIRST PLAYER	S POSITION	
+		//zoj ya fard	
+		if(n%2!=0){// fard
+			GameBoard[1][n]='1';
+			GameBoard[n][m-2]='2';
+			GameBoard[m-2][n]='3';
+			GameBoard[n][1]='4';
+			PlayersPosition[0][0]=1;//row of player 1
+			PlayersPosition[0][1]=n;//colms of player 1
+			PlayersPosition[1][0]=n;//row of player 2
+			PlayersPosition[1][1]=2*n-1;//PlayersPosition[1][1]
+			PlayersPosition[2][0]=2*n-1;//row of player 3
+			PlayersPosition[2][1]=n;//PlayersPosition[2][1]
+			PlayersPosition[3][0]=n;//Rows player4
+			PlayersPosition[3][1]=1;//PlayersPosition[3][1]
+		}
+		else{
+			GameBoard[1][n-1]='1';
+			GameBoard[n-1][m-2]='2';
+			GameBoard[m-2][n-1]='3';
+			GameBoard[n-1][1]='4';
+			PlayersPosition[0][0]=1;//PlayersPosition[0][0]
+			PlayersPosition[0][1]=n-1;//PlayersPosition[0][1]
+			PlayersPosition[1][0]=n-1;//PlayersPosition[1][0]
+			PlayersPosition[1][1]=2*n-1;//PlayersPosition[1][1]
+			PlayersPosition[2][0]=2*n-1;//PlayersPosition[2][0]
+			PlayersPosition[2][1]=n-1;//PlayersPosition[2][1]
+			PlayersPosition[3][0]=n-1;//PlayersPosition[3][0]
+			PlayersPosition[3][1]=1;//PlayersPosition[3][1]
+		}
+		for(i=0;i<WallSize;i++){// baraye por kardan satr va sotoone 0 om.
+			WallsPosition[i][0]=1;
+			WallsPosition[0][i]=1;
+		}
+		// i=0;
+		while(1){
+			printf("Please enter Number of Walls:");
+			scanf("%d",&wall);
+			if(wall>=1&&wall<=20) break;
+			else{
+				printf("WRONG ANSWER!\n Enter again:\a ");
+			}
+		}
+		PlayersWallCounter[0]=PlayersWallCounter[1]=PlayersWallCounter[2]=PlayersWallCounter[3]=wall;// PLAYERS WALL COUNTER
 	}
-	p1wc=p2wc=p3wc=p4wc=wall;// PLAYERS WALL COUNTER
-	print(m);	
 	
 	while(swWIN==1){
 		clear();
 		if(turn%4==1){// player 1 turn
-			r=r1;
-			c=c1;
+			r=PlayersPosition[0][0];
+			c=PlayersPosition[0][1];
 			setColor(3,0);
 			printf("%s's turn.TURN:[%d]\n",player1,turn);
-			if(P1_is_bot){
+			if(IsRobot[0]){
 				swRobot=1;
 			}
 		}
 		else if(turn%4==2){//PLAYER 2 TURN
-			r=r2;
-			c=c2;
+			r=PlayersPosition[1][0];
+			c=PlayersPosition[1][1];
 			setColor(5,0);
 			printf("%s's turn.TURN:[%d]\n",player2,turn);
-			if(P2_is_bot){
+			if(IsRobot[1]){
 				swRobot=1;
 			}
 		}
 		else if(turn%4==3){ //PLAYER 3 TURN
-			r=r3;
-			c=c3;
+			r=PlayersPosition[2][0];
+			c=PlayersPosition[2][1];
 			setColor(8,0);
 			printf("%s's turn.TURN:[%d]\n",player3,turn);
-			if(P3_is_bot){
+			if(IsRobot[2]){
 				swRobot=1;
 			}
 		}
 		else{ // PLAYER 4 TURN
-			r=r4;
-			c=c4;
+			r=PlayersPosition[3][0];
+			c=PlayersPosition[3][1];
 			setColor(2,0);
 			printf("%s's turn.TURN:[%d]\n",player4,turn);
-			if(P4_is_bot){
+			if(IsRobot[3]){
 				swRobot=1;
 			}
 		}
 		print(m);
 		
 		if(swRobot==0){// real player's turn
-			printf("What's the plan?\nMOVE (1) Or WALL (2)? ( Enter num (1) or (2) ) :");
+			printf("What's the plan?\nMOVE (1) Or WALL (2)? ( Enter num (1) or (2) ) \n10 For SAVE & QUIT: ");
 			while(1){
 				scanf("%d",&plan);
+				if(plan==10){
+						SaveGame();
+						exit(0);
+					}
 				if(plan==1||plan==2) break;
-				else{printf("Wrong plan\a Enter again:");
+				else{printf("Wrong plan\a Enter again. 10 For SAVE & QUIT:\n");
 				}
 			}
 			if(plan==1){ // move
-				printf("Enter number of move up(8) Or down(2) Or left(4) Or right(6):");
+				printf("Enter number of move up(8) Or down(2) Or left(4) Or right(6):\n10 For SAVE & QUIT: ");
 				while(1){
 					scanf("%d",&wmove);
+					if(wmove==10){
+						SaveGame();
+						exit(0);
+					}
 					if(wmove==8||wmove==2||wmove==4||wmove==6) break;
-					printf("Wrong MOVE\a enter again:");
+					printf("Wrong MOVE\a enter again. 10 For SAVE & QUIT:\n");
 				}
 				while(1){
-					if(Move( A ,n,wmove,&r,&c)==1){// "1" mean: can't move to that location (OUT OF RULE)
+					if(Move( GameBoard ,n,wmove,&r,&c)==1){// "1" mean: can't move to that location (OUT OF RULE)
 						printf("out of rule\a Enter another:");
 						scanf("%d",&wmove);
 					}
 					else {// SUCCESS MOVE
 						if(turn%4==1){ // LAYER 1 TURN
-							r1=r;
-							c1=c;
+							PlayersPosition[0][0]=r;
+							PlayersPosition[0][1]=c;
 						}
 						else if(turn%4==2){// PLAYER 2 TURN
-							r2=r;
-							c2=c;
+							PlayersPosition[1][0]=r;
+							PlayersPosition[1][1]=c;
 						}
 						else if(turn%4==3){//PLAYER 3 TURN
-							r3=r;
-							c3=c;
+							PlayersPosition[2][0]=r;
+							PlayersPosition[2][1]=c;
 						}
 						else{// PLAYER 4 TURN
-							r4=r;
-							c4=c;
+							PlayersPosition[3][0]=r;
+							PlayersPosition[3][1]=c;
 						}
 						clear();
 						print(m);
@@ -771,53 +1027,61 @@ int main()
 					}
 				}
 				
-				winner(&swWIN,n,player1,player2,player3,player4,r1,c2,r3,c4);
+				winner(&swWIN,n);
 			}
 			else if(plan==2){// wall
 				while(swWall){// baraye break bad az gozashtan wall
-					if(p1wc==0||p2wc==0){// one of players have no wall...
-						if(turn%4==1&& p1wc==0){
+					if(PlayersWallCounter[0]==0||PlayersWallCounter[1]==0){// one of players have no wall...
+						if(turn%4==1&& PlayersWallCounter[0]==0){
 							printf("you have not enogh wall\a\nplease move\n");
 							turn--;
 							break;
 						}
-						else if(turn%4==2&& p2wc==0){
+						else if(turn%4==2&& PlayersWallCounter[1]==0){
 							printf("U have not enogh wall\a\nplease move\n");
 							turn--;
 							break;
 						}
 					}
-					else if(p3wc==0||p4wc==0){
-						if(turn%4==3&&p3wc==0){
+					else if(PlayersWallCounter[2]==0||PlayersWallCounter[3]==0){
+						if(turn%4==3&&PlayersWallCounter[2]==0){
 							printf("YOU HAVE NOT ENOGH WALL\a\nPLEASE MOVE\n");
 							turn--;
 							break;
 						}
-						else if(turn%4==0&&p4wc==0){
+						else if(turn%4==0&&PlayersWallCounter[3]==0){
 							printf("U HAVE NOT ENOGH WALL\a\nPLEASE MOVE\n");
 							turn--;
 							break;
 						}
 					}
-					printf("Please enter location of FORWAY (4 raah) :)\nenter i,j,h (1) OR v (2): ");
+					printf("Please enter location of FORWAY (4 raah) :)\nenter i,j\nAND h (1) OR v (2) OR 10 For SAVE & QUIT: ");
 					scanf("%d %d %d",&wi,&wj,&hv);
+					if(hv==10){
+						SaveGame();
+						exit(0);
+					}
 					while(1){
-						if( Wall(A,B,n,wi,wj,hv,r1,c1,r2,c2,r3,c3,r4,c4)==1){
-							printf("out of RULE, enter again:\a\n ");
+						if( Wall(GameBoard,BoardCopy,n,wi,wj,hv)==1){
+							printf("out of RULE, enter again:\a\nEnteri,j AND h(1) or v(2) Or 10 for SAVE & QUIT");
 							scanf("%d %d %d",&wi,&wj,&hv);
+							if(hv==10){
+								SaveGame();
+								exit(0);
+							}
 						}
 						else{// SUCCESS
 							if(turn%4==1){
-								p1wc--;
+								PlayersWallCounter[0]--;
 							}
 							else if(turn%4==2){
-								p2wc--;
+								PlayersWallCounter[1]--;
 							}
 							else if(turn%4==3){
-								p3wc--;
+								PlayersWallCounter[2]--;
 							}
 							else{
-								p4wc--;
+								PlayersWallCounter[3]--;
 							}
 								//setColor(4,0);
 							swWall=0;//
@@ -839,60 +1103,60 @@ int main()
 					else if(random==2) wmove=2;
 					else if(random==3) wmove=4;
 					else if(random==0)wmove=6;
-					if(Move( A ,n,wmove,&r,&c)==0){ // SUCCESS MOVED.
+					if(Move( GameBoard ,n,wmove,&r,&c)==0){ // SUCCESS MOVED.
 						if(turn%4==1){
-							r1=r;
-							c1=c;
+							PlayersPosition[0][0]=r;
+							PlayersPosition[0][1]=c;
 						}
 						else if(turn%4==2){
-							r2=r;
-							c2=c;
+							PlayersPosition[1][0]=r;
+							PlayersPosition[1][1]=c;
 						}
 						else if(turn%4==3){
-							r3=r;
-							c3=c;
+							PlayersPosition[2][0]=r;
+							PlayersPosition[2][1]=c;
 						}
 						else {
-							r4=r;
-							c4=c;
+							PlayersPosition[3][0]=r;
+							PlayersPosition[3][1]=c;
 						}
 						break;
 					}
 				}
-				// BASTE BE TURN R1 C1 .....
+				// BASTE BE TURN PlayersPosition[0][0] PlayersPosition[0][1] .....
 				
-				winner(&swWIN,n,player1,player2,player3,player4,r1,c2,r3,c4);
+				winner(&swWIN,n);
 			}
 			else{// WALL
 				plan=2;
-				if(turn%4==1&&p1wc==0){
+				if(turn%4==1&&PlayersWallCounter[0]==0){
 					turn--;
 					swSucs=0;
 				}
-				else if(turn%4==2&&p2wc==0){
+				else if(turn%4==2&&PlayersWallCounter[1]==0){
 					turn --;
 					swSucs=0;
 				}
-				else if(turn%4==3&&p3wc==0){
+				else if(turn%4==3&&PlayersWallCounter[2]==0){
 					turn--;
 					swSucs=0;
 				}
-				else if(p4wc==0){
+				else if(PlayersWallCounter[3]==0){
 					turn--;
 					swSucs=0;
 				}
 				while(swSucs){
 					random=rand()%n;
 					random2=rand()%n;
-					if(walloc[random][random2]==0){
+					if(WallsPosition[random][random2]==0){
 						while(1){
 							random3=rand()%3;
 							if(random3==0)random3++;
-							if( Wall(A,B,n,random,random2,random3,r1,c1,r2,c2,r3,c3,r4,c4)==0){
-								if(turn%4==1) p1wc--;
-								else if(turn%4==2) p2wc--;
-								else if( turn%4==3) p3wc--;
-								else p4wc--;
+							if( Wall(GameBoard,BoardCopy,n,random,random2,random3)==0){
+								if(turn%4==1) PlayersWallCounter[0]--;
+								else if(turn%4==2) PlayersWallCounter[1]--;
+								else if( turn%4==3) PlayersWallCounter[2]--;
+								else PlayersWallCounter[3]--;
 								swSucs=0;
 								break;
 							}
