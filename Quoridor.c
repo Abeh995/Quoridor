@@ -14,6 +14,7 @@ char BoardCopy[BoardSize][BoardSize];// SOME THING LIKE GameBoard COPY OF MAIN B
 int PlayersPosition[4][2];// PLAYERS LOCATION IN MAIN BOARD
 int PlayersWallCounter[4];// PlayersWallCounter: PLAYER WALL COUNTER
 int WallsPosition[WallSize][WallSize]; // NUMBER OF WALLS IN THE SAME LOACTION // ARRAY START FROM 1
+int IsBlockedTurn[4];// FOR SAVE THE NIMBER OF TURNS THAN PLAYER ARE BLOCKED
 char player1[21];
 char player2 [21];
 char player3[21];
@@ -46,6 +47,20 @@ void setColor(const ConsoleColors foreground, const ConsoleColors background) {
   SetConsoleTextAttribute(consoleHandle, color);
 }
 
+void copy(char GameBoard[][BoardSize],char BoardCopy[][BoardSize], int UsedArray){
+	int i,j    ;
+	for (i=0;i<UsedArray;i++){
+		for(j=0;j<UsedArray;j++){
+			BoardCopy[i][j]=GameBoard[i][j];
+		}
+	}
+	for(i=1;i<UsedArray;i+=2){
+		for(j=1;j<UsedArray;j+=2){
+			BoardCopy[i][j]='0';
+		}
+	}
+}
+
 /*void goxy(int x,int y){
 	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursorCoord;
@@ -63,21 +78,21 @@ void clear(){
 	system("cls");
 }
 
-void print(int m){
+void print(int UsedArray){
 	int i,j;
-	for(i=0;i<m;i++){
-        for(j=0;j<m;j++){
+	for(i=0;i<UsedArray;i++){
+        for(j=0;j<UsedArray;j++){
             printf(" %c",GameBoard[i][j]);
         }
         printf("\n");
     }
 }
 
-void print2(int m){
+void print2(int UsedArray){
 	
 	int i,j;
-	for(i=0;i<m;i++){
-        for(j=0;j<m;j++){
+	for(i=0;i<UsedArray;i++){
+        for(j=0;j<UsedArray;j++){
             printf(" %d",GameBoard[i][j]);
         }
         printf("\n");
@@ -146,13 +161,13 @@ void CanPlaceWall(char BoardCopy[][BoardSize], int r,int c ){// FOR one player
 int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 	
 	int i,j;
-	int m =2*n+1;
+	int UsedArray =2*n+1;
 	int counter=0;
 	bool can=false;
 	
-	copy(GameBoard,BoardCopy,m);
+	copy(GameBoard,BoardCopy,UsedArray);
 	CanPlaceWall(BoardCopy,PlayersPosition[0][0],PlayersPosition[0][1]);// FOR PLAYER 1
-	for(j=1;j<m;j+=2){
+	for(j=1;j<UsedArray;j+=2){
 		if(BoardCopy[2*n-1][j]=='4'){
 			can =true;
 		}
@@ -163,9 +178,9 @@ int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 	}
 	
 	
-	copy(GameBoard,BoardCopy,m);// FOR PLAYER 2
+	copy(GameBoard,BoardCopy,UsedArray);// FOR PLAYER 2
 	CanPlaceWall(BoardCopy,PlayersPosition[1][0],PlayersPosition[1][1]);
-	for(i=1;i<m;i+=2){
+	for(i=1;i<UsedArray;i+=2){
 		if(BoardCopy[i][1]=='4'){
 			can=true;
 		}
@@ -175,9 +190,9 @@ int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 		can=false;
 	}
 	
-	copy(GameBoard,BoardCopy,m);// FOR PLAYER 3
+	copy(GameBoard,BoardCopy,UsedArray);// FOR PLAYER 3
 	CanPlaceWall(BoardCopy,PlayersPosition[2][0],PlayersPosition[2][1]);
-	for(j=1;j<m;j+=2){
+	for(j=1;j<UsedArray;j+=2){
 		if(BoardCopy[1][j]=='4'){
 			can=true;
 		}
@@ -187,9 +202,9 @@ int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 		can= false;
 	}
 	
-	copy(GameBoard,BoardCopy,m);// FOR PLAYER 4
+	copy(GameBoard,BoardCopy,UsedArray);// FOR PLAYER 4
 	CanPlaceWall(BoardCopy,PlayersPosition[3][0],PlayersPosition[3][1]);
-	for(i=1;i<m;i+=2){
+	for(i=1;i<UsedArray;i+=2){
 		if(BoardCopy[i][2*n-1]=='4'){
 			can=true;
 		}
@@ -209,7 +224,7 @@ int CAN(char GameBoard[][BoardSize],char BoardCopy[][BoardSize]){
 
 int Wall(char GameBoard[][BoardSize],char BoardCopy[][BoardSize],int n,int wi,int wj, int hv){ //PLACE WALLS   . wi: WALL I & ... .hv: H OR V
 	int i,j;
-	int m=2*n+1;
+	int UsedArray=2*n+1;
 	bool can = false ;
 	if(wi>n-1|| wj >n-1){ // BEHINE SAZI SHAVAD
 		return 1; //OUT OF RULE
@@ -475,10 +490,10 @@ int Move(char GameBoard[][BoardSize],int n,int nmove,int *I,int *J ){//li= last 
 	}
 }
 
-void createboard(char GameBoard[][BoardSize],int m){
+void createboard(char GameBoard[][BoardSize],int UsedArray){
 	int i,j;
-    int rows=m;
-    int cols=m;
+    int rows=UsedArray;
+    int cols=UsedArray;
     
     for ( i = 0; i < rows; i++) {
         for ( j = 0; j < cols; j++) {
@@ -490,49 +505,220 @@ void createboard(char GameBoard[][BoardSize],int m){
 			}
         }
     }
-    for(i=1;i<m;){
-    	for(j=2;j<m-1;){
+    for(i=1;i<UsedArray;i+=2){
+    	for(j=2;j<UsedArray-1;j+=2){
     		GameBoard[i][j]='|';//amoodi
-    		j+=2;
 		}
-    	i+=2;
 	}
-	for(j=1;j<m;){
-    	for(i=2;i<m-1;){//ofoghi
+	for(j=1;j<UsedArray;j+=2){
+    	for(i=2;i<UsedArray-1;i+=2){//ofoghi
     		GameBoard[i][j]='-';
-    		i+=2;
 		}
-    	j+=2;
 	}
-	for(i=2;i<m-1;){
-		for(j=2;j<m-1;){
+	for(i=2;i<UsedArray-1;i+=2){
+		for(j=2;j<UsedArray-1;j+=2){
 			GameBoard[i][j]= '+';
-			j+=2;
-		}
-		i+=2;
-	}
-}
-
-void copy(char GameBoard[][BoardSize],char BoardCopy[][BoardSize], int m){
-	int i,j    ;
-	for (i=0;i<m;i++){
-		for(j=0;j<m;j++){
-			BoardCopy[i][j]=GameBoard[i][j];
-		}
-	}
-	for(i=1;i<m;i+=2){
-		for(j=1;j<m;j+=2){
-			BoardCopy[i][j]='0';
 		}
 	}
 }
 
-void printb(int m){
-	for(int i=0;i<m;i++){
-		for(int j=0;j<m;j++){
+void printb(int UsedArray){
+	for(int i=0;i<UsedArray;i++){
+		for(int j=0;j<UsedArray;j++){
 			printf(" %c",BoardCopy[i][j]);
 		}
 		printf("\n");
+	}
+}
+
+int Trip(int TripNumber){
+	int UsedArray=2*n+1;
+	if(TripNumber==1){// DELETE ALL THE WALLS
+		createboard(GameBoard,UsedArray);
+		for(int i=1;i<WallSize;i++){
+			for(int j=1;j<WallSize;j++){
+				WallsPosition[i][j]=0;
+			}
+		}
+		GameBoard[PlayersPosition[0][0]][PlayersPosition[0][1]]='1';
+		GameBoard[PlayersPosition[1][0]][PlayersPosition[1][1]]='2';
+		GameBoard[PlayersPosition[2][0]][PlayersPosition[2][1]]='3';
+		GameBoard[PlayersPosition[3][0]][PlayersPosition[3][1]]='4';
+		printf("Bad NEWS! here we have an TRIP for you!\nAll The Walls Deleted!\a");
+		sleep(6500);
+		clear();
+		print(UsedArray);
+		return 0;
+	}
+	
+	else if(TripNumber==2){ //  Decrease PLAYERS WALL
+		int Number=rand()%3;
+		if(Number==0) Number=2;
+		else if(Number == 1) Number =3;
+		else Number=5;
+		if(turn%4==1){// player 1 turn
+			PlayersWallCounter[0]-=Number;
+			if(PlayersWallCounter[0]<0) PlayersWallCounter[0]=0;
+			printf("Bad NEWS! here we have an TRIP for %s! Your walls DECREASED = -%d!\a\n",player1,Number);
+		}
+		else if(turn%4==2){//PLAYER 2 TURN
+			PlayersWallCounter[1]-=Number;
+			if(PlayersWallCounter[1]<0) PlayersWallCounter[1]=0;
+			printf("Bad NEWS! here we have an TRIP for %s! Your walls DECREASED = -%d!\a\n",player2,Number);
+		}
+		else if(turn%4==3){ //PLAYER 3 TURN
+			PlayersWallCounter[2]-=Number;
+			if(PlayersWallCounter[2]<0) PlayersWallCounter[2]=0;
+			printf("Bad NEWS! here we have an TRIP for %s! Your walls DECREASED = -%d!\a\n",player3,Number);
+		}
+		else{ // PLAYER 4 TURN
+			PlayersWallCounter[3]-=Number;
+			if(PlayersWallCounter[3]<0) PlayersWallCounter[3]=0;
+			printf("Bad NEWS! here we have an TRIP for %s! Your walls DECREASED = -%d!\a\n",player4,Number);
+		}
+		sleep(6500);
+		return 0;
+	}
+	
+	else{ // BLOCK PLAYER FOR ONE OR TWO TURN
+		int NumberOfBlock=rand()%2;
+		if(NumberOfBlock==0) NumberOfBlock=2;
+		
+		if(turn%4==1){// player 1 turn
+			IsBlockedTurn[0]=NumberOfBlock;
+			if(IsBlockedTurn[0]>4) IsBlockedTurn[0]=4;
+			printf("Bad NEWS! here we have an TRIP for %s! You have been BLOCKED for [%d] TURN!\a\n",player1,NumberOfBlock);
+		}
+		else if(turn%4==2){//PLAYER 2 TURN
+			IsBlockedTurn[1]=NumberOfBlock;
+			if(IsBlockedTurn[1]>4) IsBlockedTurn[1]=4;
+			printf("Bad NEWS! here we have an TRIP for %s! You have been BLOCKED for [%d] TURN!\a\n",player2,NumberOfBlock);
+		}
+		else if(turn%4==3){ //PLAYER 3 TURN
+			IsBlockedTurn[2]=NumberOfBlock;
+			if(IsBlockedTurn[2]>4) IsBlockedTurn[2]=4;
+			printf("Bad NEWS! here we have an TRIP for %s! You have been BLOCKED for [%d] TURN!\a\n",player3,NumberOfBlock);
+		}
+		else{ // PLAYER 4 TURN
+			IsBlockedTurn[3]=NumberOfBlock;
+			if(IsBlockedTurn[3]>4) IsBlockedTurn[3]=4;
+			printf("Bad NEWS! here we have an TRIP for %s! You have been BLOCKED for [%d] TURN!\a\n",player4,NumberOfBlock);
+		}
+		turn++;
+		sleep(7000);
+		clear();
+		return 0;
+	}
+}
+
+int Gift(int GiftNumber){
+	if(GiftNumber==1){
+		int Number=rand()%3;
+		if(Number==1) Number=3;
+		else if(Number==0) Number=5;
+		
+		if(turn%4==1){// player 1 turn
+			PlayersWallCounter[0]+=Number;
+			if(PlayersWallCounter[0]>WallSize) PlayersWallCounter[0]=WallSize;
+			printf("Good NEWS! Oww It's a GIFT for %s! Your walls +=%d!\a\n",player1,Number);
+		}
+		else if(turn%4==2){//PLAYER 2 TURN
+			PlayersWallCounter[1]+=Number;
+			if(PlayersWallCounter[1]>WallSize) PlayersWallCounter[1]=WallSize;
+			printf("Good NEWS! Oww It's a GIFT for %s! Your walls +=%d!\a\n",player2,Number);
+		}
+		else if(turn%4==3){ //PLAYER 3 TURN
+			PlayersWallCounter[2]+=Number;
+			if(PlayersWallCounter[2]>WallSize) PlayersWallCounter[2]=WallSize;
+			printf("Good NEWS! Oww It's a GIFT for %s! Your walls +=%d!\a\n",player3,Number);
+		}
+		else{ // PLAYER 4 TURN
+			PlayersWallCounter[3]+=Number;
+			if(PlayersWallCounter[3]>WallSize) PlayersWallCounter[3]=WallSize;
+			printf("Good NEWS! Oww It's a GIFT for %s! Your walls +=%d!\a\n",player4,Number);
+		}
+		sleep(5500);
+		return 0;
+	}
+	else{ // GIFTNUMBER 2
+		int Number=rand()%2,counter=0;
+		if(Number==0) Number =2;
+		
+		if(turn%4==1){// player 1 turn
+			if(PlayersWallCounter[1]>0) {
+				PlayersWallCounter[1]--;
+				counter++;
+			}
+			if(PlayersWallCounter[2]>0) {
+				PlayersWallCounter[2]--;
+				counter++;
+			}
+			if(PlayersWallCounter[3]>0) {
+				PlayersWallCounter[3]--;
+				counter++;
+			}
+			PlayersWallCounter[0]+=counter;
+			printf("Bad NEWS for All EXEPT %s! other Players gift you %d! Your walls +=%d!\a\n",player1,Number,counter);
+		}
+		else if(turn%4==2){//PLAYER 2 TURN
+			if(PlayersWallCounter[0]>0) {
+				PlayersWallCounter[0]--;
+				counter++;
+			}
+			if(PlayersWallCounter[2]>0) {
+				PlayersWallCounter[2]--;
+				counter++;
+			}
+			if(PlayersWallCounter[3]>0) {
+				PlayersWallCounter[3]--;
+				counter++;
+			}
+			PlayersWallCounter[1]+=counter;
+			printf("Bad NEWS for All EXEPT %s! other Players gift you %d! Your walls +=%d!\a\n",player2,Number,counter);
+		}
+		else if(turn%4==3){ //PLAYER 3 TURN
+			if(PlayersWallCounter[1]>0) {
+				PlayersWallCounter[1]--;
+				counter++;
+			}
+			if(PlayersWallCounter[0]>0) {
+				PlayersWallCounter[0]--;
+				counter++;
+			}
+			if(PlayersWallCounter[3]>0) {
+				PlayersWallCounter[3]--;
+				counter++;
+			}
+			PlayersWallCounter[2]+=counter;
+			printf("Bad NEWS for All EXEPT %s! other Players gift you %d! Your walls +=%d!\a\n",player3,Number,counter);
+		}
+		else{ // PLAYER 4 TURN
+			if(PlayersWallCounter[1]>0) {
+				PlayersWallCounter[1]--;
+				counter++;
+			}
+			if(PlayersWallCounter[2]>0) {
+				PlayersWallCounter[2]--;
+				counter++;
+			}
+			if(PlayersWallCounter[0]>0) {
+				PlayersWallCounter[0]--;
+				counter++;
+			}
+			PlayersWallCounter[3]+=counter;
+			printf("Bad NEWS for All EXEPT %s! other Players gift you %d! Your walls +=%d!\a\n",player4,Number,counter);
+		}
+		sleep(7000);
+		return 0;
+	}
+}
+
+void Spells(){
+	if(rand()%2==1){ //  TIME TO USE TRIP
+		Trip(rand()%3);
+	}
+	else{ // OWWW! ITS A GIFT
+		Gift(rand()%2);
 	}
 }
 
@@ -570,7 +756,13 @@ int SaveGame(){
 	
 	written =fwrite(IsRobot,sizeof(bool),4,save);
 	if(written!=4){
-		printf("eror writing Playbot");
+		printf("eror writing IsRobot");
+		return 1;
+	}
+	
+	written = fwrite(IsBlockedTurn,sizeof(int),4,save);
+	if(written!=4){
+		printf("eror writing IsBlockedTurn");
 		return 1;
 	}
 	
@@ -638,7 +830,13 @@ int LoadGame(){
 	
 	readed=fread(IsRobot,sizeof(bool),4,load);
 	if(readed!=4){
-		printf("eror reading Playbot");
+		printf("eror reading IsRobot");
+		return 1;
+	}
+	
+	readed=fread(IsBlockedTurn,sizeof(int),4,load);
+	if(readed!=4){
+		printf("eror reading IsBlockedTurn");
 		return 1;
 	}
 	
@@ -682,7 +880,7 @@ int LoadGame(){
 }
 
 int StartNewGame(int *wall){
-	int m,Wall,i;
+	int UsedArray,Wall,i;
 	if(IsRobot[0]==false){ //REAL PLAYER
 		printf("Player 1 name: ");
 		scanf("%s",player1);
@@ -720,17 +918,17 @@ int StartNewGame(int *wall){
 		scanf("%d",&n);
 		if(n>=3 && n<=25) break;
 	}
-	m=2*n+1;
-	createboard(GameBoard,m);
+	UsedArray=2*n+1;
+	createboard(GameBoard,UsedArray);
 	clear();
-	print(m);
+	print(UsedArray);
 	
 	// FIRST PLAYER	S POSITION	
 	//zoj ya fard	
 	if(n%2!=0){// fard
 		GameBoard[1][n]='1';
-		GameBoard[n][m-2]='2';
-		GameBoard[m-2][n]='3';
+		GameBoard[n][UsedArray-2]='2';
+		GameBoard[UsedArray-2][n]='3';
 		GameBoard[n][1]='4';
 		PlayersPosition[0][0]=1;//row of player 1
 		PlayersPosition[0][1]=n;//colms of player 1
@@ -743,8 +941,8 @@ int StartNewGame(int *wall){
 	}
 	else{
 		GameBoard[1][n-1]='1';
-		GameBoard[n-1][m-2]='2';
-		GameBoard[m-2][n-1]='3';
+		GameBoard[n-1][UsedArray-2]='2';
+		GameBoard[UsedArray-2][n-1]='3';
 		GameBoard[n-1][1]='4';
 		PlayersPosition[0][0]=1;//PlayersPosition[0][0]
 		PlayersPosition[0][1]=n-1;//PlayersPosition[0][1]
@@ -791,14 +989,15 @@ int main()
 	//printf("%d",rand());
 	//printf("\n%d",rand());
 
-    int m,i,j,rows,cols;
+    int UsedArray,i,j,rows,cols;
     int wall, wmove, plan, random,random2, random3;
-    int swWIN=1,swWall=1,sw=1, sw1,sw2, swRobot=0,swSucs;
+    int swWIN=1,swWall=1,sw=1, swBlocked=1,sw2, swRobot=0,swSucs;
 	int r,c;
 	int NewGame, BotGame;
 	int wi,wj,hv; // wall location & ofoghi ya amoodi
 	bool CanSave=false;
 	IsRobot[0]=IsRobot[1]=IsRobot[2]=IsRobot[3]=false;
+	IsBlockedTurn[0]=IsBlockedTurn[1]=IsBlockedTurn[2]=IsBlockedTurn[3]=0;
 	turn=1;
 	// LOADING ...
 
@@ -832,7 +1031,7 @@ int main()
 		else if(NewGame==2){// LOAD GAME
 			clear();
 			if(LoadGame()==0){
-				m=2*n+1;
+				UsedArray=2*n+1;
 				printf("Loaded Successfully!\n");
 				sleep(3000);
 				clear();
@@ -885,17 +1084,17 @@ int main()
 			scanf("%d",&n);
 			if(n>=3 && n<=25) break;
 		}
-		m=2*n+1;
-		createboard(GameBoard,m);
+		UsedArray=2*n+1;
+		createboard(GameBoard,UsedArray);
 		clear();
-		print(m);
+		print(UsedArray);
 		
 		// FIRST PLAYER	S POSITION	
 		//zoj ya fard	
 		if(n%2!=0){// fard
 			GameBoard[1][n]='1';
-			GameBoard[n][m-2]='2';
-			GameBoard[m-2][n]='3';
+			GameBoard[n][UsedArray-2]='2';
+			GameBoard[UsedArray-2][n]='3';
 			GameBoard[n][1]='4';
 			PlayersPosition[0][0]=1;//row of player 1
 			PlayersPosition[0][1]=n;//colms of player 1
@@ -908,8 +1107,8 @@ int main()
 		}
 		else{
 			GameBoard[1][n-1]='1';
-			GameBoard[n-1][m-2]='2';
-			GameBoard[m-2][n-1]='3';
+			GameBoard[n-1][UsedArray-2]='2';
+			GameBoard[UsedArray-2][n-1]='3';
 			GameBoard[n-1][1]='4';
 			PlayersPosition[0][0]=1;//PlayersPosition[0][0]
 			PlayersPosition[0][1]=n-1;//PlayersPosition[0][1]
@@ -938,46 +1137,88 @@ int main()
 	
 	while(swWIN==1){
 		clear();
-		if(turn%4==1){// player 1 turn
-			r=PlayersPosition[0][0];
-			c=PlayersPosition[0][1];
-			setColor(3,0);
-			printf("%s's turn.TURN:[%d]\n",player1,turn);
-			if(IsRobot[0]){
-				swRobot=1;
+		while(swBlocked){// WHILE find a UnBLOCKED PLAYER
+			if(turn%4==1){// player 1 turn
+				if(IsBlockedTurn[0]!=0){// PLAYER IS BLOCKED
+					turn++;
+					IsBlockedTurn[0]--;
+				}
+				else{
+					r=PlayersPosition[0][0];
+					c=PlayersPosition[0][1];
+					setColor(3,0);
+					printf("%s's turn / Walls: %d / TURN:[%d]\n",player1,PlayersWallCounter[0],turn);
+					if(turn%7==0){
+						Spells();
+					}
+					if(IsRobot[0]){
+						swRobot=1;
+					}
+					swBlocked=0;
+				}
+			}
+			if(turn%4==2){//PLAYER 2 TURN
+				if(IsBlockedTurn[1]!=0){// PLAYER IS BLOCKED
+					turn++;
+					IsBlockedTurn[1]--;
+					}
+				else{
+					r=PlayersPosition[1][0];
+					c=PlayersPosition[1][1];
+					setColor(5,0);
+					printf("%s's turn / Walls: %d / TURN:[%d]\n",player2,PlayersWallCounter[1],turn);
+					if(turn%7==0){
+						Spells();
+					}
+					if(IsRobot[1]){
+						swRobot=1;
+					}
+					swBlocked=0;
+				}
+			}
+			if(turn%4==3){ //PLAYER 3 TURN
+				if(IsBlockedTurn[2]!=0){// PLAYER IS BLOCKED
+					turn++;
+					IsBlockedTurn[2]--;
+				}
+				else{
+					r=PlayersPosition[2][0];
+					c=PlayersPosition[2][1];
+					setColor(8,0);
+					printf("%s's turn / Walls: %d / TURN:[%d]\n",player3,PlayersWallCounter[2],turn);
+					if(turn%7==0){
+						Spells();
+					}
+					if(IsRobot[2]){
+						swRobot=1;
+					}
+					swBlocked=0;
+				}
+			}
+			if(turn%4==0){ // PLAYER 4 TURN
+				if(IsBlockedTurn[3]!=0){// PLAYER IS BLOCKED
+					turn++;
+					IsBlockedTurn[3]--;
+				}
+				else{
+					r=PlayersPosition[3][0];
+					c=PlayersPosition[3][1];
+					setColor(2,0);
+					printf("%s's turn / Walls: %d / TURN:[%d]\n",player4,PlayersWallCounter[3],turn);
+					if(turn%7==0){
+						Spells();
+					}
+					if(IsRobot[3]){
+						swRobot=1;
+					}
+					swBlocked=0;
+				}
 			}
 		}
-		else if(turn%4==2){//PLAYER 2 TURN
-			r=PlayersPosition[1][0];
-			c=PlayersPosition[1][1];
-			setColor(5,0);
-			printf("%s's turn.TURN:[%d]\n",player2,turn);
-			if(IsRobot[1]){
-				swRobot=1;
-			}
-		}
-		else if(turn%4==3){ //PLAYER 3 TURN
-			r=PlayersPosition[2][0];
-			c=PlayersPosition[2][1];
-			setColor(8,0);
-			printf("%s's turn.TURN:[%d]\n",player3,turn);
-			if(IsRobot[2]){
-				swRobot=1;
-			}
-		}
-		else{ // PLAYER 4 TURN
-			r=PlayersPosition[3][0];
-			c=PlayersPosition[3][1];
-			setColor(2,0);
-			printf("%s's turn.TURN:[%d]\n",player4,turn);
-			if(IsRobot[3]){
-				swRobot=1;
-			}
-		}
-		print(m);
+		print(UsedArray);
 		
 		if(swRobot==0){// real player's turn
-			printf("What's the plan?\nMOVE (1) Or WALL (2)? ( Enter num (1) or (2) ) \n10 For SAVE & QUIT: ");
+			printf("What's the plan?\nMOVE (1) Or WALL (2)? (10) For SAVE & QUIT: ");
 			while(1){
 				scanf("%d",&plan);
 				if(plan==10){
@@ -1022,7 +1263,7 @@ int main()
 							PlayersPosition[3][1]=c;
 						}
 						clear();
-						print(m);
+						print(UsedArray);
 						break;
 					}
 				}
@@ -1169,6 +1410,7 @@ int main()
 		swWall=1;
 		swSucs=1;
 		swRobot=0;
+		swBlocked=1;
 	}
 	
 	return 0;
